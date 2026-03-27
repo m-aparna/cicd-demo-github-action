@@ -20,7 +20,7 @@ jobs:
         run: pip install flask
         
       - name: Run Unit Tests
-        run: python test_app.py
+        run: python test-app.py
 
   # STEP 2: CONTINUOUS DELIVERY (Docker Build)
   continuous-delivery:
