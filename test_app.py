@@ -1,14 +1,20 @@
-from fastapi.testclient import TestClient
-from app import app
+import os
+from fastapi import FastAPI, Request
+from fastapi.responses import HTMLResponse
+from fastapi.templating import Jinja2Templates
 
-client = TestClient(app)
+app = FastAPI()
 
-def test_read_main():
-    response = client.get("/")
-    assert response.status_code == 200
-    assert "Online" in response.text
+# This finds the absolute path of the folder where app.py sits
+current_dir = os.path.dirname(os.path.realpath(__file__))
+template_path = os.path.join(current_dir, "templates")
 
-def test_health():
-    response = client.get("/health")
-    assert response.status_code == 200
-    assert response.json() == {"status": "healthy"}
+templates = Jinja2Templates(directory=template_path)
+
+@app.get("/", response_class=HTMLResponse)
+async def read_item(request: Request):
+    return templates.TemplateResponse("index.html", {
+        "request": request, 
+        "status": "Online", 
+        "version": "2.0.0 (FastAPI)"
+    })
