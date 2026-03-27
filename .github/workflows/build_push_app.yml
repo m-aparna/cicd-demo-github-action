@@ -1,43 +1,58 @@
-name: CI/CD Pipeline Demo
+name: FastAPI CI/CD Demo
 
 on:
   push:
-    branches: [ main ]
+    # Trigger on EVERY branch push so we can test all code
+    branches: [ "**" ] 
 
 jobs:
-  # STEP 1: CONTINUOUS INTEGRATION (Testing)
+  # -------------------------------------------------------------------------
+  # PHASE 1: CONTINUOUS INTEGRATION (CI)
+  # RUNS ON: Every single push to any branch.
+  # -------------------------------------------------------------------------
   continuous-integration:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - name: 1. Checkout Code
+        uses: actions/checkout@v3
       
-      - name: Set up Python
+      - name: 2. Setup Python Environment
         uses: actions/setup-python@v4
         with:
           python-version: '3.9'
           
-      - name: Install Dependencies
+      - name: 3. Install Dependencies
         run: pip install -r requirements.txt
         
-      - name: Run Unit Tests
-        run: python test-app.py
+      - name: 4. Run Automated Tests
+        # We test everything to catch bugs early in feature branches.
+        run: pytest test_app.py
 
-  # STEP 2: CONTINUOUS DELIVERY (Docker Build)
+  # -------------------------------------------------------------------------
+  # PHASE 2: CONTINUOUS DELIVERY (CD)
+  # RUNS ON: ONLY the 'main' branch, and ONLY if CI passed.
+  # -------------------------------------------------------------------------
   continuous-delivery:
     needs: continuous-integration
-    runs-on: ubuntu-latest
+    # CONDITION: This job only runs if the push was to the 'main' branch.
+    if: github.ref == 'refs/heads/main'
     
+    runs-on: ubuntu-latest
     permissions:
       contents: read
       packages: write
 
     steps:
-      - uses: actions/checkout@v3
+      - name: 1. Checkout Code
+        uses: actions/checkout@v3
 
-      - name: Log in to GitHub Container Registry
+      - name: 2. Login to Registry
         run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
 
-      - name: Build and Push Docker Image
+      - name: 3. Build and Push Image
         run: |
-          docker build -t ghcr.io/${{ github.repository }}:latest .
-          docker push ghcr.io/${{ github.repository }}:latest
+          IMAGE_ID=ghcr.io/${{ github.repository }}
+          IMAGE_ID=$(echo $IMAGE_ID | tr '[A-Z]' '[a-z]')
+          
+          docker build -t $IMAGE_ID:latest .
+          docker push $IMAGE_ID:latest
