@@ -17,7 +17,7 @@ jobs:
           python-version: '3.9'
           
       - name: Install Dependencies
-        run: pip install flask
+        run: pip install -r requirements.txt
         
       - name: Run Unit Tests
         run: python test-app.py
